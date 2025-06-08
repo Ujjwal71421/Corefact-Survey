@@ -2,41 +2,212 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Survey Status - Corefact Research</title>
   <style>
-    body { font-family: Arial; padding: 50px; text-align: center; background: #f0f0f0; }
-    .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    .meta { margin-top: 15px; color: #555; font-size: 16px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #333;
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .box {
+      background: #fff;
+      max-width: 500px;
+      margin: auto;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    .status {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .code {
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 10px;
+      word-break: break-word;
+    }
+    .powered {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #999;
+    }
+    .error {
+      color: red;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2 id="mainMsg">Processing...</h2>
-    <div class="meta" id="info"></div>
+  <div class="box">
+    <div class="status" id="message">Loading...</div>
+    <div class="code" id="code"></div>
+    <div class="code" id="respId"></div>
+    <div class="powered">Powered by Corefact Research</div>
   </div>
 
   <script>
     const params = new URLSearchParams(window.location.search);
     const status = params.get("status");
-    const respId = params.get("resp_id") || "Not Provided";
-    const source = params.get("utm_source") || "unknown";
-    const campaign = params.get("utm_campaign") || "unknown";
-    const wave = params.get("wave") || "N/A";
-    const lang = params.get("Lang") || "N/A";
-    const list = params.get("list") || "N/A";
+    const sid = params.get("sid");
+    const country = params.get("country");
+    const respId = params.get("resp_id");
+    const lang = params.get("lang") || "en"; // default to English
 
-    const msgMap = {
-      "111": "✅ Survey Completed",
-      "222": "❌ Disqualified",
-      "333": "⚠️ Quota Full",
-      "444": "🚫 Rejected"
+    const messageEl = document.getElementById("message");
+    const codeEl = document.getElementById("code");
+    const respIdEl = document.getElementById("respId");
+
+    // Expanded language dictionary
+    const messages = {
+      en: {
+        completed: "✅ Survey Completed",
+        disqualified: "🚫 Disqualified",
+        quotaFull: "🚫 Quota Full",
+        rejected: "🚫 Rejected/Flagged",
+        missingParams: "❌ Missing parameters. Please check your survey URL.",
+        respondent: "Respondent ID",
+        rewardCode: "Reward Code"
+      },
+      hi: {
+        completed: "✅ सर्वेक्षण पूरा हुआ",
+        disqualified: "🚫 अयोग्य",
+        quotaFull: "🚫 कोटा भर गया",
+        rejected: "🚫 अस्वीकृत/झंडी दिखा दी गई",
+        missingParams: "❌ कुछ जानकारियाँ गायब हैं। कृपया लिंक की जांच करें।",
+        respondent: "प्रतिभागी आईडी",
+        rewardCode: "इनाम कोड"
+      },
+      fr: {
+        completed: "✅ Enquête terminée",
+        disqualified: "🚫 Disqualifié",
+        quotaFull: "🚫 Quota atteint",
+        rejected: "🚫 Rejeté / Signalé",
+        missingParams: "❌ Paramètres manquants. Veuillez vérifier l'URL.",
+        respondent: "ID du participant",
+        rewardCode: "Code de récompense"
+      },
+      de: {
+        completed: "✅ Umfrage abgeschlossen",
+        disqualified: "🚫 Disqualifiziert",
+        quotaFull: "🚫 Kontingent voll",
+        rejected: "🚫 Abgelehnt/Markiert",
+        missingParams: "❌ Fehlende Parameter. Bitte überprüfen Sie die URL.",
+        respondent: "Teilnehmer-ID",
+        rewardCode: "Belohnungscode"
+      },
+      it: {
+        completed: "✅ Sondaggio completato",
+        disqualified: "🚫 Squalificato",
+        quotaFull: "🚫 Quota piena",
+        rejected: "🚫 Rifiutato/Segnalato",
+        missingParams: "❌ Parametri mancanti. Controlla l'URL.",
+        respondent: "ID partecipante",
+        rewardCode: "Codice premio"
+      },
+      es: {
+        completed: "✅ Encuesta completada",
+        disqualified: "🚫 Descalificado",
+        quotaFull: "🚫 Cupo lleno",
+        rejected: "🚫 Rechazado/Marcado",
+        missingParams: "❌ Parámetros faltantes. Por favor verifica la URL.",
+        respondent: "ID del participante",
+        rewardCode: "Código de recompensa"
+      },
+      zh: {
+        completed: "✅ 调查已完成",
+        disqualified: "🚫 不合格",
+        quotaFull: "🚫 名额已满",
+        rejected: "🚫 拒绝/标记",
+        missingParams: "❌ 缺少参数。请检查您的URL。",
+        respondent: "受访者ID",
+        rewardCode: "奖励码"
+      },
+      ja: {
+        completed: "✅ アンケート完了",
+        disqualified: "🚫 不合格",
+        quotaFull: "🚫 定員に達しました",
+        rejected: "🚫 拒否/フラグ付き",
+        missingParams: "❌ パラメータが不足しています。URLを確認してください。",
+        respondent: "回答者ID",
+        rewardCode: "報酬コード"
+      },
+      ru: {
+        completed: "✅ Опрос завершен",
+        disqualified: "🚫 Дисквалифицирован",
+        quotaFull: "🚫 Квота заполнена",
+        rejected: "🚫 Отклонено/Отмечено",
+        missingParams: "❌ Отсутствуют параметры. Пожалуйста, проверьте URL.",
+        respondent: "ID респондента",
+        rewardCode: "Код вознаграждения"
+      },
+      pt: {
+        completed: "✅ Pesquisa concluída",
+        disqualified: "🚫 Desqualificado",
+        quotaFull: "🚫 Quota cheia",
+        rejected: "🚫 Rejeitado/Marcado",
+        missingParams: "❌ Parâmetros ausentes. Verifique a URL.",
+        respondent: "ID do participante",
+        rewardCode: "Código de recompensa"
+      },
+      ar: {
+        completed: "✅ تم إكمال الاستبيان",
+        disqualified: "🚫 غير مؤهل",
+        quotaFull: "🚫 الحصة كاملة",
+        rejected: "🚫 مرفوض/مُعلم",
+        missingParams: "❌ معلمات مفقودة. يرجى التحقق من الرابط.",
+        respondent: "معرف المستجيب",
+        rewardCode: "رمز المكافأة"
+      },
+      ko: {
+        completed: "✅ 설문 완료",
+        disqualified: "🚫 부적격",
+        quotaFull: "🚫 인원 초과",
+        rejected: "🚫 거부/표시됨",
+        missingParams: "❌ 매개변수가 누락되었습니다. URL을 확인하세요.",
+        respondent: "응답자 ID",
+        rewardCode: "보상 코드"
+      }
     };
 
-    document.getElementById("mainMsg").innerText = msgMap[status] || "🔎 Unknown Status";
+    // Use selected language or fallback to English
+    const t = messages[lang] || messages.en;
 
-    document.getElementById("info").innerText =
-      `Source: ${source} | Campaign: ${campaign} | Wave: ${wave} | Lang: ${lang} | List: ${list} | Respondent ID: ${respId} | Status: ${status}`;
+    if (!status || !sid || !country) {
+      messageEl.textContent = t.missingParams;
+      messageEl.classList.add("error");
+      codeEl.textContent = "";
+      respIdEl.textContent = "";
+    } else {
+      let message;
+      switch (status) {
+        case "111":
+          message = t.completed;
+          break;
+        case "222":
+          message = t.disqualified;
+          break;
+        case "333":
+          message = t.quotaFull;
+          break;
+        case "444":
+          message = t.rejected;
+          break;
+        default:
+          message = "Unknown status";
+      }
+
+      messageEl.textContent = message;
+      codeEl.textContent = `${t.rewardCode}: ${status} | SID: ${sid} | Country: ${country}`;
+
+      if (respId) {
+        respIdEl.textContent = `${t.respondent}: ${respId}`;
+      } else {
+        respIdEl.textContent = "";
+      }
+    }
   </script>
 </body>
 </html>
